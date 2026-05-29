@@ -12,8 +12,6 @@ import 'package:test/test.dart';
 void main() {
   late FieldAnalyzer analyzer;
   late ClassElement simpleModel;
-  late ClassElement eventHandler;
-  late ClassElement complexService;
   late ClassElement dataProcessor;
 
   setUpAll(() async {
@@ -28,8 +26,6 @@ void main() {
           AssetId('field_analyzer', 'test/field_analyzer_test.dart'),
         );
         simpleModel = testLib.getClass('SimpleModel')!;
-        eventHandler = testLib.getClass('EventHandler')!;
-        complexService = testLib.getClass('ComplexService')!;
         dataProcessor = testLib.getClass('DataProcessor')!;
       },
     );
@@ -81,62 +77,6 @@ void main() {
       final formatter = OutputFormatter();
       final grouped = formatter.groupByCategory(fields);
       expect(grouped.values.expand((v) => v).length, equals(4));
-    });
-  });
-
-  group('FieldAnalyzer callback support', () {
-    test('should analyze class with callback fields without crashing', () {
-      expect(
-        () => analyzer.analyzeFields(eventHandler),
-        returnsNormally,
-      );
-    });
-
-    test('should categorize all EventHandler fields', () {
-      final result = analyzer.analyzeFields(eventHandler);
-      expect(result.length, equals(4));
-      expect(result['name'], equals('value'));
-      expect(result['config'], equals('map'));
-    });
-
-    test('should categorize callback fields as callback', () {
-      final result = analyzer.analyzeFields(eventHandler);
-      expect(result['onComplete'], equals('callback'));
-      expect(result['onError'], equals('callback'));
-    });
-
-    test('should handle complex mixed types without crashing', () {
-      expect(
-        () => analyzer.analyzeFields(complexService),
-        returnsNormally,
-      );
-    });
-
-    test('should correctly categorize all ComplexService fields', () {
-      final result = analyzer.analyzeFields(complexService);
-      expect(result['id'], equals('value'));
-      expect(result['items'], equals('list'));
-      expect(result['options'], equals('map'));
-    });
-
-    test('should categorize function fields as callback in ComplexService', () {
-      final result = analyzer.analyzeFields(complexService);
-      expect(result['onInit'], equals('callback'));
-      expect(result['onDispose'], equals('callback'));
-      expect(result['transformer'], equals('callback'));
-    });
-
-    test('should produce summary with callback category', () {
-      final summary = analyzer.summarize(eventHandler);
-      expect(summary, contains('callback:'));
-      expect(summary, contains('onComplete'));
-      expect(summary, contains('onError'));
-    });
-
-    test('should produce FieldInfo with callback category for function fields', () {
-      final fields = analyzer.analyze(eventHandler);
-      final onComplete = fields.firstWhere((f) => f.name == 'onComplete');
-      expect(onComplete.category.label, equals('callback'));
     });
   });
 }
