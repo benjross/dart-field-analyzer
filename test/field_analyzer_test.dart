@@ -76,12 +76,10 @@ void main() {
       expect(result['config'], equals('map'));
     });
 
-    test('should not categorize callbacks as map or list', () {
+    test('should categorize callback fields as callback', () {
       final result = analyzer.analyzeFields(eventHandler);
-      expect(result['onComplete'], isNot(equals('map')));
-      expect(result['onComplete'], isNot(equals('list')));
-      expect(result['onError'], isNot(equals('map')));
-      expect(result['onError'], isNot(equals('list')));
+      expect(result['onComplete'], equals('callback'));
+      expect(result['onError'], equals('callback'));
     });
   });
 
@@ -100,11 +98,11 @@ void main() {
       expect(result['options'], equals('map'));
     });
 
-    test('should not crash on void Function fields in ComplexService', () {
+    test('should categorize function fields as callback in ComplexService', () {
       final result = analyzer.analyzeFields(complexService);
-      expect(result.containsKey('onInit'), isTrue);
-      expect(result.containsKey('onDispose'), isTrue);
-      expect(result.containsKey('transformer'), isTrue);
+      expect(result['onInit'], equals('callback'));
+      expect(result['onDispose'], equals('callback'));
+      expect(result['transformer'], equals('callback'));
     });
   });
 
