@@ -1,38 +1,57 @@
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/type.dart';
-import 'package:source_gen/source_gen.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
 
-/// Analyzes a class and categorizes each field by its type.
+import 'field_info.dart';
+import 'output_formatter.dart';
+import 'type_category.dart';
+import 'type_classifier.dart';
+
+/// Analyzes a Dart class and produces structured information about its fields.
 ///
-/// Returns a map of field names to type categories:
-/// - `'map'` for Map types and subtypes
-/// - `'list'` for List types and subtypes
-/// - `'value'` for everything else (String, int, bool, etc.)
+/// Uses [TypeClassifier] to categorize each field's type and produces
+/// [FieldInfo] objects that can be formatted by [OutputFormatter].
 class FieldAnalyzer {
-  static const _mapChecker = TypeChecker.fromUrl('dart:core#Map');
-  static const _listChecker = TypeChecker.fromUrl('dart:core#List');
+  final TypeClassifier _classifier;
+  final OutputFormatter _formatter;
 
-  /// Analyzes all instance fields of [classElement] and returns a map
-  /// of field names to their type categories.
-  Map<String, String> analyzeFields(ClassElement classElement) {
-    final result = <String, String>{};
+  FieldAnalyzer({
+    TypeClassifier? classifier,
+    OutputFormatter? formatter,
+  })  : _classifier = classifier ?? TypeClassifier(),
+        _formatter = formatter ?? OutputFormatter();
+
+  /// Analyzes all instance fields of [classElement] and returns
+  /// a list of [FieldInfo] objects.
+  List<FieldInfo> analyze(ClassElement classElement) {
+    final fields = <FieldInfo>[];
     for (final field in classElement.fields) {
       if (field.isStatic || field.isSynthetic) continue;
       final name = field.name;
       if (name == null) continue;
-      result[name] = categorizeType(field.type);
+
+      final type = field.type;
+      final category = _classifier.classify(type);
+      final isNullable =
+          type.nullabilitySuffix == NullabilitySuffix.question;
+
+      fields.add(FieldInfo(
+        name: name,
+        typeName: type.getDisplayString(),
+        category: category,
+        isNullable: isNullable,
+      ));
     }
-    return result;
+    return fields;
   }
 
-  /// Categorizes a [DartType] as 'map', 'list', or 'value'.
-  String categorizeType(DartType type) {
-    if (_mapChecker.isSuperTypeOf(type) || _mapChecker.isExactlyType(type)) {
-      return 'map';
-    }
-    if (_listChecker.isSuperTypeOf(type) || _listChecker.isExactlyType(type)) {
-      return 'list';
-    }
-    return 'value';
+  /// Convenience method: analyzes fields and returns a simple name→category map.
+  Map<String, String> analyzeFields(ClassElement classElement) {
+    return _formatter.toSimpleMap(analyze(classElement));
+  }
+
+  /// Returns a human-readable summary of the class analysis.
+  String summarize(ClassElement classElement) {
+    final fields = analyze(classElement);
+    return _formatter.summarize(classElement.name ?? 'Unknown', fields);
   }
 }

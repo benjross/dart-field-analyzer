@@ -14,6 +14,7 @@ void main() {
   late ClassElement simpleModel;
   late ClassElement eventHandler;
   late ClassElement complexService;
+  late ClassElement dataProcessor;
 
   setUpAll(() async {
     analyzer = FieldAnalyzer();
@@ -29,6 +30,7 @@ void main() {
         simpleModel = testLib.getClass('SimpleModel')!;
         eventHandler = testLib.getClass('EventHandler')!;
         complexService = testLib.getClass('ComplexService')!;
+        dataProcessor = testLib.getClass('DataProcessor')!;
       },
     );
   });
@@ -59,9 +61,30 @@ void main() {
       expect(result.length, equals(4));
       expect(result.keys, containsAll(['name', 'age', 'metadata', 'tags']));
     });
+
+    test('should return FieldInfo with correct type names', () {
+      final fields = analyzer.analyze(simpleModel);
+      final nameField = fields.firstWhere((f) => f.name == 'name');
+      expect(nameField.typeName, equals('String'));
+      expect(nameField.category.label, equals('value'));
+    });
+
+    test('should detect nullable fields', () {
+      final fields = analyzer.analyze(dataProcessor);
+      final labelField = fields.firstWhere((f) => f.name == 'label');
+      expect(labelField.isNullable, isTrue);
+      expect(labelField.category.label, equals('value'));
+    });
+
+    test('should group fields by category', () {
+      final fields = analyzer.analyze(simpleModel);
+      final formatter = OutputFormatter();
+      final grouped = formatter.groupByCategory(fields);
+      expect(grouped.values.expand((v) => v).length, equals(4));
+    });
   });
 
-  group('FieldAnalyzer with callback fields', () {
+  group('FieldAnalyzer callback support', () {
     test('should analyze class with callback fields without crashing', () {
       expect(
         () => analyzer.analyzeFields(eventHandler),
@@ -81,10 +104,8 @@ void main() {
       expect(result['onComplete'], equals('callback'));
       expect(result['onError'], equals('callback'));
     });
-  });
 
-  group('FieldAnalyzer with complex mixed types', () {
-    test('should handle class with many type varieties', () {
+    test('should handle complex mixed types without crashing', () {
       expect(
         () => analyzer.analyzeFields(complexService),
         returnsNormally,
@@ -104,8 +125,20 @@ void main() {
       expect(result['onDispose'], equals('callback'));
       expect(result['transformer'], equals('callback'));
     });
-  });
 
+    test('should produce summary with callback category', () {
+      final summary = analyzer.summarize(eventHandler);
+      expect(summary, contains('callback:'));
+      expect(summary, contains('onComplete'));
+      expect(summary, contains('onError'));
+    });
+
+    test('should produce FieldInfo with callback category for function fields', () {
+      final fields = analyzer.analyze(eventHandler);
+      final onComplete = fields.firstWhere((f) => f.name == 'onComplete');
+      expect(onComplete.category.label, equals('callback'));
+    });
+  });
 }
 
 class SimpleModel {
@@ -142,4 +175,13 @@ class ComplexService {
     this.onDispose,
     this.transformer,
   );
+}
+
+class DataProcessor {
+  final String id;
+  final String? label;
+  final List<int> data;
+  final Map<String, dynamic> config;
+
+  DataProcessor(this.id, this.label, this.data, this.config);
 }
