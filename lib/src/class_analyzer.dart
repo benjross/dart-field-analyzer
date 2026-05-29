@@ -1,6 +1,5 @@
 import 'package:analyzer/dart/element/element.dart';
 
-import 'field_info.dart';
 import 'type_utils.dart';
 
 /// Provides high-level analysis of Dart classes.
@@ -10,9 +9,10 @@ import 'type_utils.dart';
 class ClassAnalyzer {
   /// Returns the names of all constructors for [classElement].
   List<String> constructorNames(ClassElement classElement) {
-    return classElement.constructors
-        .map((c) => c.name.isEmpty ? '(default)' : c.name)
-        .toList();
+    return classElement.constructors.map((c) {
+      final name = c.name;
+      return (name == null || name.isEmpty) ? '(default)' : name;
+    }).toList();
   }
 
   /// Returns the names of all superclasses in the hierarchy.
@@ -42,16 +42,18 @@ class ClassAnalyzer {
         .toList();
   }
 
-  /// Returns constructor parameters that require initialization.
+  /// Returns constructor parameter names that require initialization.
   List<String> requiredParams(ClassElement classElement) {
-    final defaultConstructor = classElement.constructors
-        .where((c) => c.name.isEmpty)
-        .firstOrNull;
+    final defaultConstructor = classElement.constructors.where((c) {
+      final name = c.name;
+      return name == null || name.isEmpty;
+    }).firstOrNull;
     if (defaultConstructor == null) return [];
 
-    return defaultConstructor.parameters
+    return defaultConstructor.formalParameters
         .where((p) => p.isRequired)
-        .map((p) => p.name)
+        .map((p) => p.name ?? '')
+        .where((n) => n.isNotEmpty)
         .toList();
   }
 
