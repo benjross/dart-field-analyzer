@@ -1,0 +1,16 @@
+name: field_analyzer
+description: A utility for analyzing and categorizing Dart class fields by type.
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  analyzer: '>=8.1.1 <14.0.0'
+  build: '>=3.0.2 <5.0.0'
+  source_gen: ^4.2.3
+
+dev_dependencies:
+  build_test: ^3.3.2
+  dart_flutter_team_lints: ^3.1.0
+  test: ^1.26.3
