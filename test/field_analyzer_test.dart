@@ -106,6 +106,8 @@ class ComplexService {
   final void Function() onInit;
   final void Function() onDispose;
   final String Function(int) transformer;
+  final void Function(String, int, bool) onEvent;
+  final void Function()? onMaybe;
 
   ComplexService(
     this.id,
@@ -114,6 +116,8 @@ class ComplexService {
     this.onInit,
     this.onDispose,
     this.transformer,
+    this.onEvent,
+    this.onMaybe,
   );
 }
 
